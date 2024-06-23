@@ -128,6 +128,7 @@ subprojects {
         if (isForge) {
             modImplementation("me.shedaniel.cloth:cloth-config-forge:${rootProject.cloth_config_version}")
             modRuntimeOnly("curse.maven:farmers-delight-398521:${rootProject.farmers_delight}")
+            modRuntimeOnly("curse.maven:rei-310111:${rootProject.rei}")
         }
     }
 
