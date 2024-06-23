@@ -1,11 +1,20 @@
 package vice.sol_valheim;
 
+#if PRE_CURRENT_MC_1_19_2
+import dev.architectury.registry.registries.Registries;
+import net.minecraft.core.Registry;
+#elif POST_CURRENT_MC_1_20_1
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+#endif
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.UseAnim;
 
@@ -16,6 +25,11 @@ import java.util.stream.Collectors;
 
 public class ValheimFoodData
 {
+    #if PRE_CURRENT_MC_1_19_2
+    public static final TagKey<Item> RESETS_FOOD = TagKey.create(Registry.ITEM_REGISTRY, new ResourceLocation("sol_valheim", "resets_food"));
+	#elif POST_CURRENT_MC_1_20_1
+    public static final TagKey<Item> RESETS_FOOD = TagKey.create(Registries.ITEM, new ResourceLocation("sol_valheim", "resets_food"));
+    #endif
     public static final EntityDataSerializer<ValheimFoodData> FOOD_DATA_SERIALIZER = new EntityDataSerializer<>(){
         @Override
         public void write(FriendlyByteBuf buffer, ValheimFoodData value)
@@ -48,7 +62,7 @@ public class ValheimFoodData
 
     public void eatItem(Item food)
     {
-        if (food == Items.ROTTEN_FLESH)
+        if (new ItemStack(food).is(RESETS_FOOD))
             return;
 
         var config = ModConfig.getFoodConfig(food);
@@ -99,7 +113,7 @@ public class ValheimFoodData
 
     public boolean canEat(Item food)
     {
-        if (food == Items.ROTTEN_FLESH)
+        if (new ItemStack(food).is(RESETS_FOOD))
             return true;
 
         if (food.getDefaultInstance().getUseAnimation() == UseAnim.DRINK)

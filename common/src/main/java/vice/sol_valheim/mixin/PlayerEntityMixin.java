@@ -27,6 +27,8 @@ import vice.sol_valheim.ValheimFoodData;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
+import static vice.sol_valheim.ValheimFoodData.RESETS_FOOD;
+
 @Mixin({Player.class})
 public abstract class PlayerEntityMixin extends LivingEntity implements PlayerEntityMixinDataAccessor
 {
@@ -61,7 +63,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements PlayerEn
 
     @Inject(at = {@At("HEAD")}, method = {"eat(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/ItemStack;"})
     private void onEatFood(Level world, ItemStack stack, CallbackInfoReturnable<ItemStack> info) {
-        if (stack.getItem() == Items.ROTTEN_FLESH) {
+        if (stack.is(RESETS_FOOD)) {
             sol_valheim$food_data.clear();
             sol_valheim$trackData();
             return;

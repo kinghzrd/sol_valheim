@@ -13,6 +13,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import vice.sol_valheim.accessors.PlayerEntityMixinDataAccessor;
 
+import static vice.sol_valheim.ValheimFoodData.RESETS_FOOD;
+
 @Mixin({Item.class})
 public class ItemMixin
 {
@@ -24,7 +26,7 @@ public class ItemMixin
         if (item.isEdible()) {
             ItemStack itemStack = player.getItemInHand(usedHand);
 
-            if (item == Items.ROTTEN_FLESH) {
+            if (new ItemStack(item).is(RESETS_FOOD)) {
                 player.startUsingItem(usedHand);
 
                 info.setReturnValue(InteractionResultHolder.consume(itemStack));

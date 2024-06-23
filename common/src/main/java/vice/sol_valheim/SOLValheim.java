@@ -24,6 +24,8 @@ import org.slf4j.Logger;
 
 import java.util.List;
 
+import static vice.sol_valheim.ValheimFoodData.RESETS_FOOD;
+
 public class SOLValheim
 {
 
@@ -94,7 +96,7 @@ public class SOLValheim
 	public static void addTooltip(ItemStack item, TooltipFlag flag, List<Component> list)
 	{
 		var food = item.getItem();
-		if (food == Items.ROTTEN_FLESH) {
+		if (item.is(RESETS_FOOD)) {
 			list.add(Component.literal("☠ Empties Your Stomach!").withStyle(ChatFormatting.GREEN));
 			return;
 		}
