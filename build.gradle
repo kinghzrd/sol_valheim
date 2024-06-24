@@ -123,6 +123,9 @@ subprojects {
 
         if (isFabric) {
             modImplementation("me.shedaniel.cloth:cloth-config-fabric:${rootProject.cloth_config_version}")
+            modRuntimeOnly("curse.maven:farmers-delight-fabric-482834:${rootProject.fabric_farmers_delight}")
+            modRuntimeOnly("curse.maven:rei-fabric-310111:${rootProject.fabric_rei}")
+            modRuntimeOnly("curse.maven:carpet-349239:${rootProject.carpet}")
         }
 
         if (isForge) {
