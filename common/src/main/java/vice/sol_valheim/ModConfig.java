@@ -1,6 +1,5 @@
 package vice.sol_valheim;
 
-import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
 import me.shedaniel.autoconfig.annotation.ConfigEntry;
@@ -9,7 +8,6 @@ import me.shedaniel.cloth.clothconfig.shadowed.blue.endless.jankson.Comment;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -132,6 +130,7 @@ public class ModConfig extends PartitioningSerializer.GlobalData {
             - saturationModifier: Affects Food Duration & Player Speed
             - healthRegenModifier: Multiplies health regen speed
             - extraEffects: Extra effects provided by eating the food. Format: { String ID, float duration, int amplifier }
+            - overrides: Ignore doing calculations and set the value explicitly. Values can be set to null when not overriding. Format: { int time, int health, float regen }
         """)
         public LinkedHashMap<String, FoodConfig> foodConfigs = new LinkedHashMap<>() {{}};
 
@@ -141,18 +140,21 @@ public class ModConfig extends PartitioningSerializer.GlobalData {
             public float healthRegenModifier = 1f;
             public List<MobEffectConfig> extraEffects = new ArrayList<>();
 
+            public OverridesConfig overrides = null;
+
             public int getTime() {
-                var time = (int) (SOLValheim.Config.common.defaultTimer * 20 * saturationModifier * nutrition);
-                return Math.max(time, 6000);
+                return (overrides != null && overrides.time != null) ?
+                        overrides.time : (int) Math.max(SOLValheim.Config.common.defaultTimer * 20 * saturationModifier * nutrition, 6000);
             }
 
             public int getHearts() {
-                return Math.round(Math.max(nutrition * SOLValheim.Config.common.nutritionHealthModifier, 2));
+                return (overrides != null && overrides.health != null) ?
+                         overrides.health : Math.round(Math.max(nutrition * SOLValheim.Config.common.nutritionHealthModifier, 2));
             }
 
-            public float getHealthRegen()
-            {
-                return Mth.clamp(nutrition * 0.10f * healthRegenModifier, 0.25f, 2f);
+            public float getHealthRegen() {
+                return (overrides != null && overrides.regen != null) ?
+                        overrides.regen: Mth.clamp(nutrition * 0.10f * healthRegenModifier,0.25f, 2f);
             }
 
             @Override
@@ -179,6 +181,17 @@ public class ModConfig extends PartitioningSerializer.GlobalData {
             public MobEffect getEffect() {
                 return SOLValheim.MOB_EFFECTS.getRegistrar().get(new ResourceLocation(ID));
             }
+        }
+
+        public static final class OverridesConfig implements ConfigData {
+            @ConfigEntry.Gui.Tooltip() @Comment("How long the specified food lasts in ticks")
+            public Integer time;
+
+            @ConfigEntry.Gui.Tooltip() @Comment("How much health the specified food gives (1 = half a heart)")
+            public Integer health;
+
+            @ConfigEntry.Gui.Tooltip() @Comment("How much regen the specified food gives")
+            public Float regen;
         }
 
     }
