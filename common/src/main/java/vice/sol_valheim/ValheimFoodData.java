@@ -29,6 +29,8 @@ public class ValheimFoodData
     public static final TagKey<Item> RESETS_FOOD = TagKey.create(Registry.ITEM_REGISTRY, new ResourceLocation("sol_valheim", "resets_food"));
 	#elif POST_CURRENT_MC_1_20_1
     public static final TagKey<Item> RESETS_FOOD = TagKey.create(Registries.ITEM, new ResourceLocation("sol_valheim", "resets_food"));
+    public static final TagKey<Item> CAN_EAT_EARLY = TagKey.create(Registries.ITEM, new ResourceLocation("sol_valheim", "can_eat_early"));
+
     #endif
     public static final EntityDataSerializer<ValheimFoodData> FOOD_DATA_SERIALIZER = new EntityDataSerializer<>(){
         @Override
@@ -62,7 +64,7 @@ public class ValheimFoodData
 
     public void eatItem(Item food)
     {
-        if (new ItemStack(food).is(RESETS_FOOD))
+        if (food.getDefaultInstance().is(RESETS_FOOD))
             return;
 
         var config = ModConfig.getFoodConfig(food);
@@ -113,10 +115,11 @@ public class ValheimFoodData
 
     public boolean canEat(Item food)
     {
-        if (new ItemStack(food).is(RESETS_FOOD))
+        var foodItem = food.getDefaultInstance();
+        if (foodItem.is(RESETS_FOOD) || (foodItem.is(CAN_EAT_EARLY)))
             return true;
 
-        if (food.getDefaultInstance().getUseAnimation() == UseAnim.DRINK)
+        if (foodItem.getUseAnimation() == UseAnim.DRINK)
             return DrinkSlot == null || DrinkSlot.canEatEarly();
 
         var existing = getEatenFood(food);
@@ -268,7 +271,7 @@ public class ValheimFoodData
         public int ticksLeft;
 
         public boolean canEatEarly() {
-            if (ticksLeft < 1200)
+            if (ticksLeft < 1200 || item.getDefaultInstance().is(CAN_EAT_EARLY))
                 return true;
 
             var config = ModConfig.getFoodConfig(item);

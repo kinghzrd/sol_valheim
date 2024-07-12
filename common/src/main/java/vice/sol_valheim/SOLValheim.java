@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 
 import java.util.List;
 
+import static vice.sol_valheim.ValheimFoodData.CAN_EAT_EARLY;
 import static vice.sol_valheim.ValheimFoodData.RESETS_FOOD;
 
 public class SOLValheim
@@ -124,6 +125,10 @@ public class SOLValheim
 		if (item.getUseAnimation() == UseAnim.DRINK) {
 			list.add(Component.literal("❄ Refreshing!").withStyle(ChatFormatting.AQUA));
 
+		}
+
+		if (item.is(CAN_EAT_EARLY)) {
+			list.add(Component.literal("⌛ Can be consumed anytime!").withStyle(ChatFormatting.DARK_PURPLE));
 		}
 	}
 }

@@ -131,8 +131,12 @@ public class ModConfig extends PartitioningSerializer.GlobalData {
             - healthRegenModifier: Multiplies health regen speed
             - extraEffects: Extra effects provided by eating the food. Format: { String ID, float duration, int amplifier }
             - overrides: Ignore doing calculations and set the value explicitly. Values can be set to null when not overriding. Format: { int time, int health, float regen }
+            
+            Behaviours controlled by tags:
+            #sol_valheim:resets_food - Resets all active food
+            #sol_valheim:can_eat_early - Food that can be eaten prematurely. If any mod allows eating certain food early, remember to add this tag or else the timer will not reset.
         """)
-        public LinkedHashMap<String, FoodConfig> foodConfigs = new LinkedHashMap<>() {{}};
+        public LinkedHashMap<String, FoodConfig> foodConfigs = new LinkedHashMap<>();
 
         public static final class FoodConfig implements ConfigData {
             public int nutrition;
