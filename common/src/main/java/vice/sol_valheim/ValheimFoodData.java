@@ -4,7 +4,6 @@ package vice.sol_valheim;
 import dev.architectury.registry.registries.Registries;
 import net.minecraft.core.Registry;
 #elif POST_CURRENT_MC_1_20_1
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 #endif
 import net.minecraft.nbt.CompoundTag;
@@ -12,11 +11,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.food.FoodProperties;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.item.*;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -116,10 +111,11 @@ public class ValheimFoodData
     public boolean canEat(Item food)
     {
         var foodItem = food.getDefaultInstance();
-        if (foodItem.is(RESETS_FOOD) || (foodItem.is(CAN_EAT_EARLY)))
+        if (foodItem.is(RESETS_FOOD))
             return true;
 
-        if (foodItem.getUseAnimation() == UseAnim.DRINK)
+        var isConsumablePotion = (foodItem.getUseAnimation() == UseAnim.DRINK && !(food.getClass().equals(SplashPotionItem.class) || food.getClass().equals(LingeringPotionItem.class)));
+        if (isConsumablePotion)
             return DrinkSlot == null || DrinkSlot.canEatEarly();
 
         var existing = getEatenFood(food);
@@ -271,7 +267,9 @@ public class ValheimFoodData
         public int ticksLeft;
 
         public boolean canEatEarly() {
-            if (ticksLeft < 1200 || item.getDefaultInstance().is(CAN_EAT_EARLY))
+            var isAlwaysEdible = (item.isEdible() && (item.getFoodProperties().canAlwaysEat() || item.getDefaultInstance().is(CAN_EAT_EARLY)));
+            var isConsumablePotion = (item.getDefaultInstance().getUseAnimation() == UseAnim.DRINK && !(item.getClass().equals(SplashPotionItem.class) || item.getClass().equals(LingeringPotionItem.class)));
+            if (ticksLeft < 1200 || isAlwaysEdible || isConsumablePotion)
                 return true;
 
             var config = ModConfig.getFoodConfig(item);

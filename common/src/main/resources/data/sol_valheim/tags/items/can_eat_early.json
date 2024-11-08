@@ -1,27 +1,5 @@
 {
   "replace": false,
   "values": [
-    "minecraft:golden_apple",
-    "minecraft:enchanted_golden_apple",
-    {
-      "id": "ars_nouveau:sourceberry_bush",
-      "required": false
-    },
-    {
-      "id": "ars_nouveau:mendosteen_pod",
-      "required": false
-    },
-    {
-      "id": "ars_nouveau:bastion_pod",
-      "required": false
-    },
-    {
-      "id": "ars_nouveau:frostaya_pod",
-      "required": false
-    },
-    {
-      "id": "ars_nouveau:bombegranate_pod",
-      "required": false
-    }
   ]
 }

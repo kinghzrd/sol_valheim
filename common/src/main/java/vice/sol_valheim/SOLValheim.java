@@ -97,6 +97,13 @@ public class SOLValheim
 	public static void addTooltip(ItemStack item, TooltipFlag flag, List<Component> list)
 	{
 		var food = item.getItem();
+		// Splash/lingering potion still have the drink animation but have an overridden on use function
+		var isConsumablePotion = (item.getUseAnimation() == UseAnim.DRINK && !(food.getClass().equals(SplashPotionItem.class) || food.getClass().equals(LingeringPotionItem.class)));
+
+		if (!(food.isEdible() || isConsumablePotion)) {
+			return;
+		}
+
 		if (item.is(RESETS_FOOD)) {
 			list.add(Component.literal("☠ Empties Your Stomach!").withStyle(ChatFormatting.GREEN));
 			return;
@@ -122,12 +129,11 @@ public class SOLValheim
 			list.add(Component.literal("★ " + eff.getDisplayName().getString() + (effect.amplifier > 1 ? " " + effect.amplifier : "")).withStyle(ChatFormatting.GREEN));
 		}
 
-		if (item.getUseAnimation() == UseAnim.DRINK) {
-			list.add(Component.literal("❄ Refreshing!").withStyle(ChatFormatting.AQUA));
-
+		if (isConsumablePotion) {
+			list.add(Component.literal("❄ Refreshing! Can be consumed anytime!").withStyle(ChatFormatting.AQUA));
 		}
 
-		if (item.is(CAN_EAT_EARLY)) {
+		if (item.is(CAN_EAT_EARLY)|| (food.isEdible() && food.getFoodProperties().canAlwaysEat())) {
 			list.add(Component.literal("⌛ Can be consumed anytime!").withStyle(ChatFormatting.DARK_PURPLE));
 		}
 	}

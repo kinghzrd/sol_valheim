@@ -134,7 +134,7 @@ public class ModConfig extends PartitioningSerializer.GlobalData {
             
             Behaviours controlled by tags:
             #sol_valheim:resets_food - Resets all active food
-            #sol_valheim:can_eat_early - Food that can be eaten prematurely. If any mod allows eating certain food early, remember to add this tag or else the timer will not reset.
+            #sol_valheim:can_eat_early - Food that can be eaten prematurely. Note: Some food can be eaten early even without this tag.
         """)
         public LinkedHashMap<String, FoodConfig> foodConfigs = new LinkedHashMap<>();
 
