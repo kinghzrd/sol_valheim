@@ -35,19 +35,21 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.UseAnim;
 import org.joml.Matrix4f;
 import org.joml.Vector2d;
+import org.joml.Vector2f;
 import vice.sol_valheim.accessors.PlayerEntityMixinDataAccessor;
 
 public class FoodHUD implements ClientGuiEvent.RenderHud
 {
     static Minecraft client;
 
-    private static int HudHeight = 10;
-
+    private static final String BACKGROUND_SPRITE = "textures/gui/sprites/meter_background/default.png";
+    private static final String BACKGROUND_LARGE_SPRITE = "textures/gui/sprites/meter_background/default_large.png";
+    private static final String OUTLINE_SPRITE = "textures/gui/sprites/meter_outline/default.png";
+    private static final String OUTLINE_LARGE_SPRITE = "textures/gui/sprites/meter_outline/default_large.png";
     public FoodHUD() {
         ClientGuiEvent.RENDER_HUD.register(this);
         client = Minecraft.getInstance();
     }
-
 
     @Override
     public void renderHud(#if PRE_CURRENT_MC_1_19_2 PoseStack #elif POST_CURRENT_MC_1_20_1 GuiGraphics #endif graphics, float tickDelta) {
@@ -88,10 +90,12 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         int whiteBg = FastColor.ARGB32.color(128, 255, 255, 255);
         int yellow = FastColor.ARGB32.color(255, 255, 200, 37);
         int yellowBg = FastColor.ARGB32.color(150, 255, 200, 37);
+        int red = FastColor.ARGB32.color(255, 237, 57, 57);
 
         int startWidth = width - (size * offset) - offset + 1;
         float ticksLeftPercent = Float.min(1.0F, (float) food.ticksLeft / foodConfig.getTime());
         boolean canEat = food.canEatEarly();
+
         int bgColor = isDrink ? FastColor.ARGB32.color(96, 52, 104, 163) : FastColor.ARGB32.color(96, 0, 0, 0);
         int barColor = canEat ? yellow : white;
         int barBgColor = canEat ? yellowBg : whiteBg;
@@ -99,42 +103,47 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         var time = (float) food.ticksLeft / (20 * 60);
         var scale = useLargeIcons ? 0.75f : 0.5f;
         var isSeconds = false;
-        var minutes = String.format("%.0f", time);
 
-        if (time < 1f)
-        {
+        if (time < 1f) {
             isSeconds = true;
             time =  (float) food.ticksLeft / 20;
         }
+        var minutes = String.format("%.0f", time);
 
         var pose = #if PRE_CURRENT_MC_1_19_2 graphics #elif POST_CURRENT_MC_1_20_1 graphics.pose() #endif;
 
+        // Background
         fill(graphics, startWidth, height, startWidth + size, height + size, bgColor);
-        fillCircularBar(graphics, size, size, startWidth, height, barColor, barBgColor, ticksLeftPercent);
+        String bgTexture = useLargeIcons ? BACKGROUND_LARGE_SPRITE : BACKGROUND_SPRITE;
+        renderRadialBar(graphics, bgTexture, size, size, startWidth, height, barBgColor, ticksLeftPercent, useLargeIcons);
 
-        pose.pushPose();
+        // Outline
+        String outlineTexture = useLargeIcons ? OUTLINE_LARGE_SPRITE : OUTLINE_SPRITE;
+        renderRadialBar(graphics, outlineTexture, size, size, startWidth, height, barColor, ticksLeftPercent, useLargeIcons);
+
+        // Item
+        pose.pushPose(); // Item/Text
         pose.scale(scale, scale, scale);
         pose.translate(startWidth * (useLargeIcons ? 0.3333f : 1f), height * (useLargeIcons ? 0.3333f : 1f), 0f);
 
-        if (food.item == Items.CAKE && Platform.isModLoaded("farmersdelight"))
-        {
+        if (food.item == Items.CAKE && Platform.isModLoaded("farmersdelight")) {
             var cakeSlice = SOLValheim.ITEMS.getRegistrar().get(new ResourceLocation("farmersdelight:cake_slice"));
             renderGUIItem(graphics, new ItemStack(cakeSlice == null ? food.item : cakeSlice, 1), startWidth + 1, height + 1);
         }
-        else
-        {
+        else {
             renderGUIItem(graphics, new ItemStack(food.item, 1), startWidth + 1, height + 1);
         }
 
-        pose.pushPose();
-        pose.translate(0.0f, 0.0f, 200.0f);
-
-        drawFont(graphics, minutes, startWidth + (minutes.length() > 1 ? 6 : 12), height + 10, isSeconds ? FastColor.ARGB32.color(255, 237, 57, 57) : FastColor.ARGB32.color(255, 255, 255, 255));
-        if (!foodConfig.extraEffects.isEmpty())
-            drawFont(graphics, "+" + foodConfig.extraEffects.size(), startWidth + 6, height, yellow);
-
-        pose.popPose();
-        pose.popPose();
+        // Text
+        if (useLargeIcons) {
+            pose.pushPose(); // Text
+            pose.translate(0.0f, 0.0f, 200.0f);
+            drawFont(graphics, minutes, startWidth + (minutes.length() > 1 ? 6 : 12), height + 10, isSeconds ? red : white);
+            if (!foodConfig.extraEffects.isEmpty())
+                drawFont(graphics, "+" + foodConfig.extraEffects.size(), startWidth + 6, height, yellow);
+            pose.popPose(); // Text
+        }
+        pose.popPose(); // Item/Text
     }
 
     private static void fill(#if PRE_CURRENT_MC_1_19_2 PoseStack #elif POST_CURRENT_MC_1_20_1 GuiGraphics #endif graphics, int width, int height, int x, int y, int color)
@@ -146,105 +155,58 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         #endif
     }
 
-    // There's probably a function to make this easier but idk
-    private static Vector2d calcCircularCoords(float alpha) {
-        var angle = alpha * 2 * Math.PI;
-        var clampedAngle = angle % (Math.PI / 2);
-        var a = Math.min(Math.cos(clampedAngle)/Math.sin(clampedAngle), 1);
-        var b = Math.min(Math.tan(clampedAngle), 1);
-
-        double a2,b2;
-        if (angle < Math.PI / 2) {
-            a2 = -b;
-            b2 = -a;
-        } else if (angle < Math.PI) {
-            a2 = -a;
-            b2 = b;
-        } else if (angle < Math.PI / 2 * 3) {
-            a2 = b;
-            b2 = a;
-        } else {
-            a2 = a;
-            b2 = -b;
-        }
-
-        return new Vector2d(a2, b2);
+    private static Vector2f calcCircularCoords(float alpha) {
+        var angle = -alpha * 2 * Math.PI;
+        var hyp = Math.sqrt(2);
+        var a = Mth.clamp(Math.sin(angle) * hyp, -1, 1);
+        var b = Mth.clamp(-Math.cos(angle) * hyp, -1, 1);
+        return new Vector2f((float) a, (float) b);
     }
 
-    private static void fillCircularBar(GuiGraphics graphics, int width, int height, int x, int y, int color, int bgColor, float alpha) {
+    private static void renderRadialBar(GuiGraphics graphics, String texture, int width, int height, int x, int y, int color, float alpha, boolean useLargeIcons) {
         #if PRE_CURRENT_MC_1_19_2
         // todo
         #elif POST_CURRENT_MC_1_20_1
         Matrix4f matrix4f = graphics.pose().last().pose();
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder buffer = tesselator.getBuilder();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
+        RenderSystem.setShader(GameRenderer::getPositionColorTexShader);
         RenderSystem.enableBlend();
+        RenderSystem.setShaderTexture(0, ResourceLocation.tryBuild("sol_valheim", texture));
+        buffer.begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR_TEX);
 
-        int middleX = x + (width / 2);
-        int middleY = y + (height / 2);
-
-        // BACKGROUND
-        buffer.begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR);
+        float middleX = x + ((float) width / 2);
+        float middleY = y + ((float) height / 2);
 
         // Center Vertex
         if (alpha < 1.00) {
-            buffer.vertex(matrix4f, middleX, middleY, 0).color(bgColor).endVertex();
+            buffer.vertex(matrix4f, middleX, middleY, 0).color(color).uv(0.5F,0.5F).endVertex();
         }
         // Start Vertex - TOP CENTRE
-        buffer.vertex(matrix4f, middleX, y, 0).color(bgColor).endVertex();
+        buffer.vertex(matrix4f, middleX, y, 0).color(color).uv(0.5F, 0F).endVertex();
         // Intermediate Vertices
-        if (alpha > 0.125) // TOP LEFT
-        {
-            buffer.vertex(matrix4f, x, y, 0).color(bgColor).endVertex();
+        if (alpha > 0.125) { // TOP LEFT
+            buffer.vertex(matrix4f, x, y, 0).color(color).uv(0F, 0F).endVertex();
         }
-        if (alpha > 0.375) // BOTTOM LEFT
-        {
-            buffer.vertex(matrix4f, x, y + height, 0).color(bgColor).endVertex();
+        if (alpha > 0.375) { // BOTTOM LEFT
+            buffer.vertex(matrix4f, x, y + height, 0).color(color).uv(0F, 1F).endVertex();
         }
-        if (alpha > 0.625)  // BOTTOM RIGHT
-        {
-            buffer.vertex(matrix4f, x + width, y + height, 0).color(bgColor).endVertex();
+        if (alpha > 0.625) { // BOTTOM RIGHT
+            buffer.vertex(matrix4f, x + width, y + height, 0).color(color).uv(1F, 1F).endVertex();
         }
-        if (alpha > 0.875) // TOP RIGHT
-        {
-            buffer.vertex(matrix4f, x + width, y, 0).color(bgColor).endVertex();
+        if (alpha > 0.875) { // TOP RIGHT
+            buffer.vertex(matrix4f, x + width, y, 0).color(color).uv(1F, 0F).endVertex();
         }
         // Endpoint Vertex
         if (alpha < 1.00) {
-            Vector2d ePos = calcCircularCoords(alpha);
-            buffer.vertex(matrix4f, (float) (middleX + (ePos.x * width / 2)), (float) (middleY + (ePos.y * height / 2)), 0).color(bgColor).endVertex();
+            Vector2f ePos = calcCircularCoords(alpha);
+            buffer.vertex(matrix4f, (middleX + (ePos.x * ((float) width / 2))), (middleY + (ePos.y * ((float) height / 2))), 0)
+                    .color(color)
+                    .uv( (ePos.x / 2) + 0.5F, (ePos.y / 2) + 0.5F)
+                    .endVertex();
         }
         tesselator.end();
-
-        // OUTLINE
-        // Couldn't figure out how to get a buffer builder to render a line, using GuiGraphics instead...
-        // There some weirdness with this current implementation, probably due to rounding.
-        // Start line - TOP LEFT
-        var ta = Math.min(alpha, 0.125) / 0.125;
-        graphics.hLine((int) Mth.lerp(ta, middleX - 1, x), middleX - 1, y, color);
-        // Intermediate lines
-        if (alpha > 0.125) // LEFT
-        {
-            ta = (Math.min(alpha, 0.375) - 0.125) / 0.25 ;
-            graphics.vLine(x, (int) Mth.lerp(ta, y, y + height - 1), y, color);
-        }
-        if (alpha > 0.375) // BOTTOM
-        {
-            ta = (Math.min(alpha, 0.625) - 0.375) / 0.25 ;
-            graphics.hLine(x, (int) Mth.lerp(ta, x, x + width - 1), y + height - 1, color);
-        }
-        if (alpha > 0.625)  // RIGHT
-        {
-            ta = (Math.min(alpha, 0.875) - 0.625) / 0.25 ;
-            graphics.vLine(x + width - 1, (int) Mth.lerp(ta, y + height - 1, y), y + height - 1, color);
-        }
-        if (alpha > 0.875) // TOP RIGHT
-        {
-            ta = (alpha - 0.875) / 0.125 ;
-            graphics.hLine((int) Mth.lerp(ta, x + width - 1, middleX), x + width - 1, y, color);
-        }
-
         RenderSystem.disableBlend();
         #endif
     }
