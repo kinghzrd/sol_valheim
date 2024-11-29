@@ -44,8 +44,17 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
 
     private static final String BACKGROUND_SPRITE = "textures/gui/sprites/meter_background/default.png";
     private static final String BACKGROUND_LARGE_SPRITE = "textures/gui/sprites/meter_background/default_large.png";
+    private static final String PANEL_SPRITE = "textures/gui/sprites/panel_background/default.png";
+    private static final String PANEL_LARGE_SPRITE = "textures/gui/sprites/panel_background/default_large.png";
     private static final String OUTLINE_SPRITE = "textures/gui/sprites/meter_outline/default.png";
     private static final String OUTLINE_LARGE_SPRITE = "textures/gui/sprites/meter_outline/default_large.png";
+
+    private static final int WHITE = FastColor.ARGB32.color(255, 255, 255, 255);
+    private static final int WHITE_BG = FastColor.ARGB32.color(128, 255, 255, 255);
+    private static final int YELLOW = FastColor.ARGB32.color(255, 255, 200, 37);
+    private static final int YELLOW_BG = FastColor.ARGB32.color(150, 255, 200, 37);
+    private static final int RED = FastColor.ARGB32.color(255, 237, 57, 57);
+
     public FoodHUD() {
         ClientGuiEvent.RENDER_HUD.register(this);
         client = Minecraft.getInstance();
@@ -86,19 +95,15 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
             return;
 
         var isDrink = food.item.getDefaultInstance().getUseAnimation() == UseAnim.DRINK;
-        int white = FastColor.ARGB32.color(255, 255, 255, 255);
-        int whiteBg = FastColor.ARGB32.color(128, 255, 255, 255);
-        int yellow = FastColor.ARGB32.color(255, 255, 200, 37);
-        int yellowBg = FastColor.ARGB32.color(150, 255, 200, 37);
-        int red = FastColor.ARGB32.color(255, 237, 57, 57);
 
         int startWidth = width - (size * offset) - offset + 1;
         float ticksLeftPercent = Float.min(1.0F, (float) food.ticksLeft / foodConfig.getTime());
         boolean canEat = food.canEatEarly();
 
-        int bgColor = isDrink ? FastColor.ARGB32.color(96, 52, 104, 163) : FastColor.ARGB32.color(96, 0, 0, 0);
-        int barColor = canEat ? yellow : white;
-        int barBgColor = canEat ? yellowBg : whiteBg;
+        // todo replace drink background to use a different sprite instead of tinting
+        int bgColor = isDrink ? FastColor.ARGB32.color(200, 26, 52, 81) : FastColor.ARGB32.color(180, 0, 0, 0);
+        int barColor = canEat ? YELLOW : WHITE;
+        int barBgColor = canEat ? YELLOW_BG : WHITE_BG;
 
         var time = (float) food.ticksLeft / (20 * 60);
         var scale = useLargeIcons ? 0.75f : 0.5f;
@@ -113,13 +118,14 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         var pose = #if PRE_CURRENT_MC_1_19_2 graphics #elif POST_CURRENT_MC_1_20_1 graphics.pose() #endif;
 
         // Background
-        fill(graphics, startWidth, height, startWidth + size, height + size, bgColor);
+        String panelTexture = useLargeIcons ? PANEL_LARGE_SPRITE : PANEL_SPRITE;
+        blit(graphics, panelTexture, size, size, startWidth, height, bgColor);
+        // Meter Background
         String bgTexture = useLargeIcons ? BACKGROUND_LARGE_SPRITE : BACKGROUND_SPRITE;
-        renderRadialBar(graphics, bgTexture, size, size, startWidth, height, barBgColor, ticksLeftPercent, useLargeIcons);
-
+        renderRadialBar(graphics, bgTexture, size, size, startWidth, height, barBgColor, ticksLeftPercent);
         // Outline
         String outlineTexture = useLargeIcons ? OUTLINE_LARGE_SPRITE : OUTLINE_SPRITE;
-        renderRadialBar(graphics, outlineTexture, size, size, startWidth, height, barColor, ticksLeftPercent, useLargeIcons);
+        renderRadialBar(graphics, outlineTexture, size, size, startWidth, height, barColor, ticksLeftPercent);
 
         // Item
         pose.pushPose(); // Item/Text
@@ -138,9 +144,9 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         if (useLargeIcons) {
             pose.pushPose(); // Text
             pose.translate(0.0f, 0.0f, 200.0f);
-            drawFont(graphics, minutes, startWidth + (minutes.length() > 1 ? 6 : 12), height + 10, isSeconds ? red : white);
+            drawFont(graphics, minutes, startWidth + (minutes.length() > 1 ? 6 : 12), height + 10, isSeconds ? RED : WHITE);
             if (!foodConfig.extraEffects.isEmpty())
-                drawFont(graphics, "+" + foodConfig.extraEffects.size(), startWidth + 6, height, yellow);
+                drawFont(graphics, "+" + foodConfig.extraEffects.size(), startWidth + 6, height, YELLOW);
             pose.popPose(); // Text
         }
         pose.popPose(); // Item/Text
@@ -155,6 +161,29 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         #endif
     }
 
+    private static void blit(#if PRE_CURRENT_MC_1_19_2 PoseStack #elif POST_CURRENT_MC_1_20_1 GuiGraphics #endif graphics, String texture, int width, int height, int x, int y, int color) {
+        #if PRE_CURRENT_MC_1_19_2
+        // todo
+        #elif POST_CURRENT_MC_1_20_1
+        Matrix4f matrix4f = graphics.pose().last().pose();
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder buffer = tesselator.getBuilder();
+
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderTexture(0, ResourceLocation.tryBuild("sol_valheim", texture));
+        RenderSystem.setShader(GameRenderer::getPositionColorTexShader);
+        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX);
+
+        buffer.vertex(matrix4f, x, y, 0).color(color).uv(0, 0).endVertex();
+        buffer.vertex(matrix4f, x, y + height, 0).color(color).uv(0, 1).endVertex();
+        buffer.vertex(matrix4f, x + width, y + height, 0).color(color).uv(1, 1).endVertex();
+        buffer.vertex(matrix4f, x + width, y, 0).color(color).uv(1, 0).endVertex();
+
+        tesselator.end();
+        RenderSystem.disableBlend();
+        #endif
+    }
+
     private static Vector2f calcCircularCoords(float alpha) {
         var angle = -alpha * 2 * Math.PI;
         var hyp = Math.sqrt(2);
@@ -163,7 +192,7 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         return new Vector2f((float) a, (float) b);
     }
 
-    private static void renderRadialBar(GuiGraphics graphics, String texture, int width, int height, int x, int y, int color, float alpha, boolean useLargeIcons) {
+    private static void renderRadialBar(GuiGraphics graphics, String texture, int width, int height, int x, int y, int color, float alpha) {
         #if PRE_CURRENT_MC_1_19_2
         // todo
         #elif POST_CURRENT_MC_1_20_1
