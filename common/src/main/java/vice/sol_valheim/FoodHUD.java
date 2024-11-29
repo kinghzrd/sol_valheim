@@ -125,7 +125,10 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         renderRadialBar(graphics, bgTexture, size, size, startWidth, height, barBgColor, ticksLeftPercent);
         // Outline
         String outlineTexture = useLargeIcons ? OUTLINE_LARGE_SPRITE : OUTLINE_SPRITE;
-        renderRadialBar(graphics, outlineTexture, size, size, startWidth, height, barColor, ticksLeftPercent);
+        var blinkIntensity = 1 - (Math.min(ticksLeftPercent, 0.5) / 0.5) ;
+        var outlineAlpha = canEat ? 1 - (((Math.sin((double) food.ticksLeft / 5) / 2) + 0.5) * blinkIntensity) : 1;
+        var outlineColor = FastColor.ARGB32.color((int) (outlineAlpha * 255), FastColor.ARGB32.red(barColor), FastColor.ARGB32.green(barColor), FastColor.ARGB32.blue(barColor));
+        renderRadialBar(graphics, outlineTexture, size, size, startWidth, height, outlineColor, ticksLeftPercent);
 
         // Item
         pose.pushPose(); // Item/Text
