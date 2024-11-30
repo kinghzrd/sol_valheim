@@ -19,22 +19,16 @@ import net.minecraft.client.gui.GuiComponent;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.util.CommonColors;
 
 #endif
 
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.UseAnim;
 import org.joml.Matrix4f;
-import org.joml.Vector2d;
 import org.joml.Vector2f;
 import vice.sol_valheim.accessors.PlayerEntityMixinDataAccessor;
 
@@ -44,6 +38,12 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
 
     private static final String BACKGROUND_SPRITE = "textures/gui/sprites/meter_background/default.png";
     private static final String BACKGROUND_LARGE_SPRITE = "textures/gui/sprites/meter_background/default_large.png";
+    private static final String EMPTY_SPRITE = "textures/gui/sprites/panel_background/empty.png";
+    private static final String EMPTY_LARGE_SPRITE = "textures/gui/sprites/panel_background/empty_large.png";
+    private static final String DRINK_SPRITE = "textures/gui/sprites/placeholder_icon/drink.png";
+    private static final String DRINK_LARGE_SPRITE = "textures/gui/sprites/placeholder_icon/drink_large.png";
+    private static final String FOOD_SPRITE = "textures/gui/sprites/placeholder_icon/food.png";
+    private static final String FOOD_LARGE_SPRITE = "textures/gui/sprites/placeholder_icon/food_large.png";
     private static final String PANEL_SPRITE = "textures/gui/sprites/panel_background/default.png";
     private static final String PANEL_LARGE_SPRITE = "textures/gui/sprites/panel_background/default_large.png";
     private static final String OUTLINE_SPRITE = "textures/gui/sprites/meter_outline/default.png";
@@ -79,13 +79,31 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         int offset = 1;
         int size = useLargeIcons ? 14 : 9;
 
+        // Food
         for (var food : foodData.ItemEntries) {
             renderFoodSlot(graphics, food, width, size, offset, height, useLargeIcons);
             offset++;
         }
-
-        if (foodData.DrinkSlot != null)
+        // Empty Food
+        for (int i = 0; i < foodData.MaxItemSlots - foodData.ItemEntries.size(); i++) {
+            int startWidth = width - (size * offset) - offset + 1;
+            String panelSprite = useLargeIcons ? EMPTY_LARGE_SPRITE : EMPTY_SPRITE;
+            String iconSprite = useLargeIcons ? FOOD_LARGE_SPRITE : FOOD_SPRITE;
+            blit(graphics, panelSprite, size, size, startWidth, height, WHITE);
+            blit(graphics, iconSprite, size, size, startWidth, height, WHITE);
+            offset++;
+        }
+        // Drink
+        if (foodData.DrinkSlot != null) {
             renderFoodSlot(graphics, foodData.DrinkSlot, width, size, offset, height, useLargeIcons);
+        } else {
+            int startWidth = width - (size * offset) - offset + 1;
+            String panelSprite = useLargeIcons ? EMPTY_LARGE_SPRITE : EMPTY_SPRITE;
+            String iconSprite = useLargeIcons ? DRINK_LARGE_SPRITE : DRINK_SPRITE;
+            blit(graphics, panelSprite, size, size, startWidth, height, WHITE);
+            blit(graphics, iconSprite, size, size, startWidth, height, WHITE);
+        }
+
     }
 
     private static void renderFoodSlot(#if PRE_CURRENT_MC_1_19_2 PoseStack #elif POST_CURRENT_MC_1_20_1 GuiGraphics #endif graphics, ValheimFoodData.EatenFoodItem food, int width, int size, int offset, int height, boolean useLargeIcons)
