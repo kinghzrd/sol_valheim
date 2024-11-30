@@ -22,7 +22,7 @@ public class ValheimFoodData
 {
     #if PRE_CURRENT_MC_1_19_2
     public static final TagKey<Item> RESETS_FOOD = TagKey.create(Registry.ITEM_REGISTRY, new ResourceLocation("sol_valheim", "resets_food"));
-    public static final TagKey<Item> CAN_EAT_EARLY = TagKey.create(Registries.ITEM_REGISTRY, new ResourceLocation("sol_valheim", "can_eat_early"));
+    public static final TagKey<Item> CAN_EAT_EARLY = TagKey.create(Registry.ITEM_REGISTRY, new ResourceLocation("sol_valheim", "can_eat_early"));
 	#elif POST_CURRENT_MC_1_20_1
     public static final TagKey<Item> RESETS_FOOD = TagKey.create(Registries.ITEM, new ResourceLocation("sol_valheim", "resets_food"));
     public static final TagKey<Item> CAN_EAT_EARLY = TagKey.create(Registries.ITEM, new ResourceLocation("sol_valheim", "can_eat_early"));

@@ -8,17 +8,21 @@ import dev.architectury.platform.Platform;
 import net.minecraft.client.Minecraft;
 
 #if PRE_CURRENT_MC_1_19_2
-import net.minecraft.client.renderer.block.model.ItemTransforms;
-import net.minecraft.world.level.Level;
+import net.minecraft.client.renderer.*;
+import com.mojang.math.Matrix4f;
+import com.mojang.math.Vector3f;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Lighting;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 
 #elif POST_CURRENT_MC_1_20_1
-
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 #endif
 
@@ -28,8 +32,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.UseAnim;
-import org.joml.Matrix4f;
-import org.joml.Vector2f;
 import vice.sol_valheim.accessors.PlayerEntityMixinDataAccessor;
 
 public class FoodHUD implements ClientGuiEvent.RenderHud
@@ -184,9 +186,10 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
 
     private static void blit(#if PRE_CURRENT_MC_1_19_2 PoseStack #elif POST_CURRENT_MC_1_20_1 GuiGraphics #endif graphics, String texture, int width, int height, int x, int y, int color) {
         #if PRE_CURRENT_MC_1_19_2
-        // todo
+        Matrix4f matrix4f = graphics.last().pose();
         #elif POST_CURRENT_MC_1_20_1
         Matrix4f matrix4f = graphics.pose().last().pose();
+        #endif
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder buffer = tesselator.getBuilder();
 
@@ -202,26 +205,26 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
 
         tesselator.end();
         RenderSystem.disableBlend();
-        #endif
     }
 
-    private static Vector2f calcCircularCoords(float alpha) {
+    private static Vector3f calcCircularCoords(float alpha) {
         var angle = -alpha * 2 * Math.PI;
         var hyp = Math.sqrt(2);
         var a = Mth.clamp(Math.sin(angle) * hyp, -1, 1);
         var b = Mth.clamp(-Math.cos(angle) * hyp, -1, 1);
-        return new Vector2f((float) a, (float) b);
+        return new Vector3f((float) a, (float) b, 0);
     }
 
-    private static void renderRadialBar(GuiGraphics graphics, String texture, int width, int height, int x, int y, int color, float alpha) {
+    private static void renderRadialBar(#if PRE_CURRENT_MC_1_19_2 PoseStack #elif POST_CURRENT_MC_1_20_1 GuiGraphics #endif graphics, String texture, int width, int height, int x, int y, int color, float alpha) {
         #if PRE_CURRENT_MC_1_19_2
-        // todo
+        Matrix4f matrix4f = graphics.last().pose();
         #elif POST_CURRENT_MC_1_20_1
         Matrix4f matrix4f = graphics.pose().last().pose();
+        #endif
+        RenderSystem.setShader(GameRenderer::getPositionColorTexShader);
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder buffer = tesselator.getBuilder();
 
-        RenderSystem.setShader(GameRenderer::getPositionColorTexShader);
         RenderSystem.enableBlend();
         RenderSystem.setShaderTexture(0, ResourceLocation.tryBuild("sol_valheim", texture));
         buffer.begin(VertexFormat.Mode.TRIANGLE_FAN, DefaultVertexFormat.POSITION_COLOR_TEX);
@@ -250,15 +253,14 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         }
         // Endpoint Vertex
         if (alpha < 1.00) {
-            Vector2f ePos = calcCircularCoords(alpha);
-            buffer.vertex(matrix4f, (middleX + (ePos.x * ((float) width / 2))), (middleY + (ePos.y * ((float) height / 2))), 0)
+            Vector3f ePos = calcCircularCoords(alpha);
+            buffer.vertex(matrix4f, (middleX + (ePos.x() * ((float) width / 2))), (middleY + (ePos.y() * ((float) height / 2))), 0)
                     .color(color)
-                    .uv( (ePos.x / 2) + 0.5F, (ePos.y / 2) + 0.5F)
+                    .uv( (ePos.x() / 2) + 0.5F, (ePos.y() / 2) + 0.5F)
                     .endVertex();
         }
         tesselator.end();
         RenderSystem.disableBlend();
-        #endif
     }
 
     private static void renderGUIItem(#if PRE_CURRENT_MC_1_19_2 PoseStack #elif POST_CURRENT_MC_1_20_1 GuiGraphics #endif graphics, ItemStack stack, int x, int y)
