@@ -145,6 +145,8 @@ public class ValheimFoodData
 
     public void tick()
     {
+        // todo replace with a timestamp and have ticksLeft maybe return timestamp diff
+        // might provide better compat for carpet tick freeze
         for (var item : ItemEntries)
         {
             item.ticksLeft--;

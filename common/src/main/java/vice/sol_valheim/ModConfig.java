@@ -98,7 +98,7 @@ public class ModConfig extends PartitioningSerializer.GlobalData {
         public float nutritionHealthModifier = 1f;
 
         @ConfigEntry.Gui.Tooltip() @Comment("Speed at which regeneration should occur")
-        public float regenSpeedModifier = 1f;
+        public int regenSpeedModifier = 5;
 
         @ConfigEntry.Gui.Tooltip() @Comment("Time in ticks that regeneration should wait after taking damage")
         public int regenDelay = 20 * 10;

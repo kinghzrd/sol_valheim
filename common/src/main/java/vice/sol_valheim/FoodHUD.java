@@ -33,6 +33,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.UseAnim;
 import vice.sol_valheim.accessors.PlayerEntityMixinDataAccessor;
+import vice.sol_valheim.mixin.LivingEntityDamageAccessor;
 
 public class FoodHUD implements ClientGuiEvent.RenderHud
 {
@@ -50,6 +51,8 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
     private static final String PANEL_LARGE_SPRITE = "textures/gui/sprites/panel_background/default_large.png";
     private static final String OUTLINE_SPRITE = "textures/gui/sprites/meter_outline/default.png";
     private static final String OUTLINE_LARGE_SPRITE = "textures/gui/sprites/meter_outline/default_large.png";
+    private static final String REGEN_OUTLINE_SPRITE = "textures/gui/sprites/meter_outline/regen.png";
+    private static final String REGEN_SPRITE = "textures/gui/sprites/meter_background/regen.png";
 
     private static final int WHITE = FastColor.ARGB32.color(255, 255, 255, 255);
     private static final int WHITE_BG = FastColor.ARGB32.color(128, 255, 255, 255);
@@ -80,7 +83,16 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
 
         int offset = 1;
         int size = useLargeIcons ? 14 : 9;
-
+        // Health regen timer
+        var level = client.level;
+        var timeSinceHurt = level.getGameTime() - ((LivingEntityDamageAccessor) client.player).getLastDamageStamp();
+        if (timeSinceHurt < SOLValheim.Config.common.regenDelay) {
+            int left_width = client.getWindow().getGuiScaledWidth() / 2 - 100;
+            int left_height = client.getWindow().getGuiScaledHeight() - 39;
+            float regenAlpha = 1 - ((float) timeSinceHurt / SOLValheim.Config.common.regenDelay);
+            blit(graphics, REGEN_OUTLINE_SPRITE, 9, 9, left_width, left_height, WHITE);
+            renderRadialBar(graphics, REGEN_SPRITE, 9, 9, left_width, left_height, WHITE, regenAlpha);
+        }
         // Food
         for (var food : foodData.ItemEntries) {
             renderFoodSlot(graphics, food, width, size, offset, height, useLargeIcons);
