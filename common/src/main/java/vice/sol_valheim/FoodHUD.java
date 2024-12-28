@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import dev.architectury.event.events.client.ClientGuiEvent;
 import dev.architectury.platform.Platform;
+import me.shedaniel.autoconfig.ConfigData;
 import net.minecraft.client.Minecraft;
 
 #if PRE_CURRENT_MC_1_19_2
@@ -76,23 +77,29 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         if (foodData == null)
             return;
 
-        boolean useLargeIcons = SOLValheim.Config.client.useLargeIcons;
+        ModConfig.Client configData = SOLValheim.Config.client;
+        ModConfig.Client.FoodComponentConfig foodHudConfig = configData.foodHudConfig;
+        ModConfig.Client.ComponentConfig regenHudConfig = configData.regenHudConfig;
 
-        int width = client.getWindow().getGuiScaledWidth() / 2 + 91;
-        int height = client.getWindow().getGuiScaledHeight() - 39 - (useLargeIcons ? 6 : 0);
+        // Health regen timer
+        if (configData.showRegenMeter) {
+            var level = client.level;
+            var timeSinceHurt = level.getGameTime() - ((LivingEntityDamageAccessor) client.player).getLastDamageStamp();
+            if (timeSinceHurt < SOLValheim.Config.common.regenDelay) {
+                int width = (int) ((client.getWindow().getGuiScaledWidth() * regenHudConfig.xAnchor) + regenHudConfig.xOffset);
+                int height = (int) ((client.getWindow().getGuiScaledHeight() * regenHudConfig.yAnchor) + regenHudConfig.yOffset);
+
+                float regenAlpha = 1 - ((float) timeSinceHurt / SOLValheim.Config.common.regenDelay);
+                blit(graphics, REGEN_OUTLINE_SPRITE, 9, 9, width, height, WHITE);
+                renderRadialBar(graphics, REGEN_SPRITE, 9, 9, width, height, WHITE, regenAlpha);
+            }
+        }
 
         int offset = 1;
+        boolean useLargeIcons = configData.useLargeIcons;
         int size = useLargeIcons ? 14 : 9;
-        // Health regen timer
-        var level = client.level;
-        var timeSinceHurt = level.getGameTime() - ((LivingEntityDamageAccessor) client.player).getLastDamageStamp();
-        if (timeSinceHurt < SOLValheim.Config.common.regenDelay) {
-            int left_width = client.getWindow().getGuiScaledWidth() / 2 - 100;
-            int left_height = client.getWindow().getGuiScaledHeight() - 39;
-            float regenAlpha = 1 - ((float) timeSinceHurt / SOLValheim.Config.common.regenDelay);
-            blit(graphics, REGEN_OUTLINE_SPRITE, 9, 9, left_width, left_height, WHITE);
-            renderRadialBar(graphics, REGEN_SPRITE, 9, 9, left_width, left_height, WHITE, regenAlpha);
-        }
+        int width = (int) ((client.getWindow().getGuiScaledWidth() * foodHudConfig.xAnchor) + foodHudConfig.xOffset);
+        int height = (int) ((client.getWindow().getGuiScaledHeight() * foodHudConfig.yAnchor) + foodHudConfig.yOffset - (useLargeIcons ? 6 : 0));
         // Food
         for (var food : foodData.ItemEntries) {
             renderFoodSlot(graphics, food, width, size, offset, height, useLargeIcons);
@@ -100,24 +107,29 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         }
         // Empty Food
         for (int i = 0; i < foodData.MaxItemSlots - foodData.ItemEntries.size(); i++) {
-            int startWidth = width - (size * offset) - offset + 1;
-            String panelSprite = useLargeIcons ? EMPTY_LARGE_SPRITE : EMPTY_SPRITE;
-            String iconSprite = useLargeIcons ? FOOD_LARGE_SPRITE : FOOD_SPRITE;
-            blit(graphics, panelSprite, size, size, startWidth, height, WHITE);
-            blit(graphics, iconSprite, size, size, startWidth, height, WHITE);
+            renderEmptyFoodSlot(graphics, offset, useLargeIcons, EMPTY_LARGE_SPRITE, EMPTY_SPRITE, FOOD_LARGE_SPRITE, FOOD_SPRITE, size, width, height, WHITE);
             offset++;
         }
         // Drink
         if (foodData.DrinkSlot != null) {
             renderFoodSlot(graphics, foodData.DrinkSlot, width, size, offset, height, useLargeIcons);
         } else {
-            int startWidth = width - (size * offset) - offset + 1;
-            String panelSprite = useLargeIcons ? EMPTY_LARGE_SPRITE : EMPTY_SPRITE;
-            String iconSprite = useLargeIcons ? DRINK_LARGE_SPRITE : DRINK_SPRITE;
-            blit(graphics, panelSprite, size, size, startWidth, height, WHITE);
-            blit(graphics, iconSprite, size, size, startWidth, height, WHITE);
+            renderEmptyFoodSlot(graphics, offset, useLargeIcons, EMPTY_LARGE_SPRITE, EMPTY_SPRITE, DRINK_LARGE_SPRITE, DRINK_SPRITE, size, width, height, WHITE);
         }
 
+    }
+
+    private static void renderEmptyFoodSlot(#if PRE_CURRENT_MC_1_19_2 PoseStack #elif POST_CURRENT_MC_1_20_1 GuiGraphics #endif graphics, int offset, boolean useLargeIcons, String bigPanelSprite, String panelSprite, String bigIconSprite, String iconSprite, int size, int width, int height, int color) {
+        String currentPanelSprite = useLargeIcons ? bigPanelSprite : panelSprite;
+        String currentIconSprite = useLargeIcons ? bigIconSprite : iconSprite;
+
+        ModConfig.Client configData = SOLValheim.Config.client;
+        ModConfig.Client.FoodComponentConfig foodHudConfig = configData.foodHudConfig;
+        int startWidth = width + ((size + 1) * foodHudConfig.xGap * (offset));
+        int startHeight = height + ((size + 1) * foodHudConfig.yGap * (offset));
+
+        blit(graphics, currentPanelSprite, size, size, startWidth, startHeight, color);
+        blit(graphics, currentIconSprite, size, size, startWidth, startHeight, color);
     }
 
     private static void renderFoodSlot(#if PRE_CURRENT_MC_1_19_2 PoseStack #elif POST_CURRENT_MC_1_20_1 GuiGraphics #endif graphics, ValheimFoodData.EatenFoodItem food, int width, int size, int offset, int height, boolean useLargeIcons)
@@ -125,12 +137,15 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
         var foodConfig = ModConfig.getFoodConfig(food.item);
         if (foodConfig == null)
             return;
+        ModConfig.Client configData = SOLValheim.Config.client;
+        ModConfig.Client.FoodComponentConfig foodHudConfig = configData.foodHudConfig;
 
         var isDrink = food.item.getDefaultInstance().getUseAnimation() == UseAnim.DRINK;
-
-        int startWidth = width - (size * offset) - offset + 1;
-        float ticksLeftPercent = Float.min(1.0F, (float) food.ticksLeft / foodConfig.getTime());
         boolean canEat = food.canEatEarly();
+        float ticksLeftPercent = Float.min(1.0F, (float) food.ticksLeft / foodConfig.getTime());
+
+        int startWidth = width + ((size + 1) * foodHudConfig.xGap * (offset));
+        int startHeight = height + ((size + 1) * foodHudConfig.yGap * (offset));
 
         // todo replace drink background to use a different sprite instead of tinting
         int bgColor = isDrink ? FastColor.ARGB32.color(200, 26, 52, 81) : FastColor.ARGB32.color(180, 0, 0, 0);
@@ -151,37 +166,37 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
 
         // Background
         String panelTexture = useLargeIcons ? PANEL_LARGE_SPRITE : PANEL_SPRITE;
-        blit(graphics, panelTexture, size, size, startWidth, height, bgColor);
+        blit(graphics, panelTexture, size, size, startWidth, startHeight, bgColor);
         // Meter Background
         String bgTexture = useLargeIcons ? BACKGROUND_LARGE_SPRITE : BACKGROUND_SPRITE;
-        renderRadialBar(graphics, bgTexture, size, size, startWidth, height, barBgColor, ticksLeftPercent);
+        renderRadialBar(graphics, bgTexture, size, size, startWidth, startHeight, barBgColor, ticksLeftPercent);
         // Outline
         String outlineTexture = useLargeIcons ? OUTLINE_LARGE_SPRITE : OUTLINE_SPRITE;
         var blinkIntensity = 1 - (Math.min(ticksLeftPercent, 0.5) / 0.5) ;
         var outlineAlpha = canEat ? 1 - (((Math.sin((double) food.ticksLeft / 5) / 2) + 0.5) * blinkIntensity) : 1;
         var outlineColor = FastColor.ARGB32.color((int) (outlineAlpha * 255), FastColor.ARGB32.red(barColor), FastColor.ARGB32.green(barColor), FastColor.ARGB32.blue(barColor));
-        renderRadialBar(graphics, outlineTexture, size, size, startWidth, height, outlineColor, ticksLeftPercent);
+        renderRadialBar(graphics, outlineTexture, size, size, startWidth, startHeight, outlineColor, ticksLeftPercent);
 
         // Item
         pose.pushPose(); // Item/Text
         pose.scale(scale, scale, scale);
-        pose.translate(startWidth * (useLargeIcons ? 0.3333f : 1f), height * (useLargeIcons ? 0.3333f : 1f), 0f);
+        pose.translate(startWidth * (useLargeIcons ? 0.3333f : 1f), startHeight * (useLargeIcons ? 0.3333f : 1f), 0f);
 
         if (food.item == Items.CAKE && Platform.isModLoaded("farmersdelight")) {
             var cakeSlice = SOLValheim.ITEMS.getRegistrar().get(new ResourceLocation("farmersdelight:cake_slice"));
             renderGUIItem(graphics, new ItemStack(cakeSlice == null ? food.item : cakeSlice, 1), startWidth + 1, height + 1);
         }
         else {
-            renderGUIItem(graphics, new ItemStack(food.item, 1), startWidth + 1, height + 1);
+            renderGUIItem(graphics, new ItemStack(food.item, 1), startWidth + 1, startHeight + 1);
         }
 
         // Text
         if (useLargeIcons) {
             pose.pushPose(); // Text
             pose.translate(0.0f, 0.0f, 200.0f);
-            drawFont(graphics, minutes, startWidth + (minutes.length() > 1 ? 6 : 12), height + 10, isSeconds ? RED : WHITE);
+            drawFont(graphics, minutes, startWidth + (minutes.length() > 1 ? 6 : 12), startHeight + 10, isSeconds ? RED : WHITE);
             if (!foodConfig.extraEffects.isEmpty())
-                drawFont(graphics, "+" + foodConfig.extraEffects.size(), startWidth + 6, height, YELLOW);
+                drawFont(graphics, "+" + foodConfig.extraEffects.size(), startWidth + 6, startHeight, YELLOW);
             pose.popPose(); // Text
         }
         pose.popPose(); // Item/Text
