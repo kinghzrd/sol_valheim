@@ -119,7 +119,7 @@ public abstract class PlayerEntityMixin extends LivingEntity implements PlayerEn
         }
 
         var timeSinceHurt = level.getGameTime() - ((LivingEntityDamageAccessor) this).getLastDamageStamp();
-        if (timeSinceHurt > SOLValheim.Config.common.regenDelay && player.tickCount % (5 * SOLValheim.Config.common.regenSpeedModifier) == 0)
+        if (timeSinceHurt > SOLValheim.Config.common.regenDelay && player.tickCount % (SOLValheim.Config.common.regenSpeedModifier) == 0)
         {
             player.heal(sol_valheim$food_data.getRegenSpeed() / 20f);
         }
