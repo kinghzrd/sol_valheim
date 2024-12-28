@@ -96,6 +96,7 @@ public class SOLValheim
 
 	public static void addTooltip(ItemStack item, TooltipFlag flag, List<Component> list)
 	{
+		// TODO use Minecraft's language functionality for tooltips.
 		var food = item.getItem();
 		// Splash/lingering potion still have the drink animation but have an overridden on use function
 		var isConsumablePotion = (item.getUseAnimation() == UseAnim.DRINK && !(food.getClass().equals(SplashPotionItem.class) || food.getClass().equals(LingeringPotionItem.class)));
@@ -131,9 +132,7 @@ public class SOLValheim
 
 		if (isConsumablePotion) {
 			list.add(Component.literal("❄ Refreshing! Can be consumed anytime!").withStyle(ChatFormatting.AQUA));
-		}
-
-		if (item.is(CAN_EAT_EARLY)|| (food.isEdible() && food.getFoodProperties().canAlwaysEat())) {
+		} else if (item.is(CAN_EAT_EARLY) || food.getFoodProperties().canAlwaysEat()) {
 			list.add(Component.literal("⌛ Can be consumed anytime!").withStyle(ChatFormatting.DARK_PURPLE));
 		}
 	}
