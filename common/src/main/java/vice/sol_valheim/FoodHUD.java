@@ -36,6 +36,8 @@ import net.minecraft.world.item.UseAnim;
 import vice.sol_valheim.accessors.PlayerEntityMixinDataAccessor;
 import vice.sol_valheim.mixin.LivingEntityDamageAccessor;
 
+import java.util.List;
+
 public class FoodHUD implements ClientGuiEvent.RenderHud
 {
     static Minecraft client;
@@ -79,7 +81,7 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
 
         ModConfig.Client configData = SOLValheim.Config.client;
         ModConfig.Client.FoodComponentConfig foodHudConfig = configData.foodHudConfig;
-        ModConfig.Client.ComponentConfig regenHudConfig = configData.regenHudConfig;
+        ModConfig.Client.RegenComponentConfig regenHudConfig = configData.regenHudConfig;
 
         // Health regen timer
         if (configData.showRegenMeter) {
@@ -139,13 +141,18 @@ public class FoodHUD implements ClientGuiEvent.RenderHud
             return;
         ModConfig.Client configData = SOLValheim.Config.client;
         ModConfig.Client.FoodComponentConfig foodHudConfig = configData.foodHudConfig;
+        List<ModConfig.Client.SlotComponentConfig> slotHudConfigs = foodHudConfig.slotOffsets;
+        ModConfig.Client.SlotComponentConfig slotHudConfig = slotHudConfigs.size() >= offset ? slotHudConfigs.get(offset - 1) : null;
 
         var isDrink = food.item.getDefaultInstance().getUseAnimation() == UseAnim.DRINK;
         boolean canEat = food.canEatEarly();
         float ticksLeftPercent = Float.min(1.0F, (float) food.ticksLeft / foodConfig.getTime());
 
-        int startWidth = width + ((size + 1) * foodHudConfig.xGap * (offset));
-        int startHeight = height + ((size + 1) * foodHudConfig.yGap * (offset));
+        int xOffset = (slotHudConfig != null) ? slotHudConfig.xOffset : 0;
+        int yOffset = (slotHudConfig != null) ? slotHudConfig.yOffset : 0;
+
+        int startWidth = width + ((size + 1) * foodHudConfig.xGap * (offset)) + xOffset;
+        int startHeight = height + ((size + 1) * foodHudConfig.yGap * (offset)) + yOffset;
 
         // todo replace drink background to use a different sprite instead of tinting
         int bgColor = isDrink ? FastColor.ARGB32.color(200, 26, 52, 81) : FastColor.ARGB32.color(180, 0, 0, 0);

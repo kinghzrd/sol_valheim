@@ -205,70 +205,48 @@ public class ModConfig extends PartitioningSerializer.GlobalData {
         @ConfigEntry.Gui.Tooltip @Comment("Enlarge the currently eaten food icons, small icons disable timer text")
         public boolean useLargeIcons = true;
         @ConfigEntry.Gui.Tooltip @Comment("Position configuration for the root food hud")
-        public FoodComponentConfig foodHudConfig = new FoodComponentConfig(
-                92,
-                -39,
-                0.5f,
-                1.0f,
-                -1,
-                0
-        );
+        public FoodComponentConfig foodHudConfig = new FoodComponentConfig();
         @ConfigEntry.Gui.Tooltip @Comment("Show regen delay meter")
         public boolean showRegenMeter = true;
         @ConfigEntry.Gui.Tooltip @Comment("Position configuration for the regen indicator")
-        public ComponentConfig regenHudConfig = new ComponentConfig(
-                -100,
-                -39,
-                0.5f,
-                1.0f
-        );
+        public RegenComponentConfig regenHudConfig = new RegenComponentConfig();
 
-        public static class BaseComponentConfig implements ConfigData {
+        public static class RegenComponentConfig {
             @ConfigEntry.Gui.Tooltip @Comment("X position offset in scaled pixels")
-            public int xOffset;
-
+            public int xOffset = -100;
             @ConfigEntry.Gui.Tooltip @Comment("Y position offset in scaled pixels")
-            public int yOffset;
-
-            public BaseComponentConfig(int xOffset, int yOffset) {
-                this.xOffset = xOffset;
-                this.yOffset = yOffset;
-            }
-        }
-
-        public static class ComponentConfig extends BaseComponentConfig {
+            public int yOffset = -39;
             @ConfigEntry.Gui.Tooltip @Comment("X position relative to screen, 0 = left, 1 = right")
-            public float xAnchor;
-
+            public float xAnchor = 0.5f;
             @ConfigEntry.Gui.Tooltip @Comment("Y position relative to screen, 0 = up, 1 = down")
-            public float yAnchor;
-
-            public ComponentConfig(int xOffset, int yOffset, float xAnchor, float yAnchor) {
-                super(xOffset, yOffset);
-                this.xAnchor = xAnchor;
-                this.yAnchor = yAnchor;
-            }
+            public float yAnchor = 1.0f;
         }
 
-        public static class FoodComponentConfig extends ComponentConfig {
+        public static class SlotComponentConfig {
+            @ConfigEntry.Gui.Tooltip @Comment("X position offset in scaled pixels")
+            public int xOffset = 0;
+            @ConfigEntry.Gui.Tooltip @Comment("Y position offset in scaled pixels")
+            public int yOffset = 0;
+        }
+
+        public static class FoodComponentConfig {
+            @ConfigEntry.Gui.Tooltip @Comment("X position offset in scaled pixels")
+            public int xOffset = -92;
+            @ConfigEntry.Gui.Tooltip @Comment("Y position offset in scaled pixels")
+            public int yOffset = -39;
+            @ConfigEntry.Gui.Tooltip @Comment("X position relative to screen, 0 = left, 1 = right")
+            public float xAnchor = 0.5f;
+            @ConfigEntry.Gui.Tooltip @Comment("Y position relative to screen, 0 = up, 1 = down")
+            public float yAnchor = 1.0f;
             @ConfigEntry.Gui.Tooltip @Comment("X position multiplier between elements, 1 = shift right, -1 = shift left, 0 = unaffected")
-            public int xGap;
-
+            public int xGap = -1;
             @ConfigEntry.Gui.Tooltip @Comment("Y position multiplier between elements, 1 = shift down, -1 = shift up, 0 = unaffected")
-            public int yGap;
-
-            public FoodComponentConfig(int xOffset, int yOffset, float xAnchor, float yAnchor, int xGap, int yGap) {
-                super(xOffset, yOffset, xAnchor, yAnchor);
-                this.xGap = xGap;
-                this.yGap = yGap;
-            }
-
+            public int yGap = 0;
             @ConfigEntry.Gui.Tooltip @Comment("""
-                    NOT IMPLEMENTED - Position offset for each food entry, may be useful for more eccentric layouts.
                     You should have the same number of entries as your max number of slots + drink slot, otherwise some slots may be un-styled.
-                    Should follow the format: {int xOffset, int yOffset} for each slot you want to style. First entry affects first slot, second affects second slot, etc...
+                    Should follow the format: {int xOffset, int yOffset} for each slot you want to style. First entry affects first/rightmost slot, second affects second slot, etc...
                     """)
-            public List<BaseComponentConfig> slotOffsets = new ArrayList<>();
+            public List<SlotComponentConfig> slotOffsets = new ArrayList<>();
         }
     }
 }
